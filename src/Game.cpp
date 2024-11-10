@@ -6,6 +6,7 @@ Game::Game()
 	if (!m_window.isOpen())
 		throw std::runtime_error("Error creating the window");
 	initializePlayer();
+	m_gameState = MAINMENU;
 }
 
 Game::~Game()
@@ -35,10 +36,22 @@ void	Game::updateWindow()
 	{
 		if (m_event.type == sf::Event::Closed)
 			m_window.close();
-		else if (m_event.type == sf::Event::KeyPressed || m_event.type == sf::Event::KeyReleased)
+		else if (m_gameState == INSIDEGAME && (m_event.type == sf::Event::KeyPressed || m_event.type == sf::Event::KeyReleased))
 			handleKeyboardEvents();
+		else if (m_gameState == MAINMENU && m_event.type == sf::Event::KeyPressed)
+			updateMainMenu();
 	}
-	updatePlayer(Game::pollEvents::OUTSIDE);
+	if (m_gameState == MAINMENU && m_mainMenu.getPressedStart())
+	{
+		m_mainMenu.setPressedStart(false);
+		m_gameState = INSIDEGAME;
+	}
+	else if (m_gameState == MAINMENU && m_mainMenu.getPressedExit())
+	{
+		m_window.close();
+	}
+	if (m_gameState == INSIDEGAME)
+		updatePlayer(Game::pollEvents::OUTSIDE);
 }
 
 void	Game::handleKeyboardEvents()
@@ -46,6 +59,11 @@ void	Game::handleKeyboardEvents()
 	if (m_event.type == sf::Event::KeyPressed && m_event.key.code == sf::Keyboard::Escape)
 		m_window.close();
 	updatePlayer(Game::pollEvents::INSIDE);
+}
+
+void	Game::updateMainMenu()
+{
+	m_mainMenu.update(m_event);
 }
 
 void	Game::updatePlayer(Game::pollEvents pollEvent)
@@ -61,9 +79,22 @@ void	Game::renderPlayer()
 	m_player->render(m_window);
 }
 
+void	Game::renderMainMenu()
+{
+	m_mainMenu.render(m_window);
+}
+
 void	Game::renderWindow()
 {
-	m_window.clear(sf::Color::Blue);
-	renderPlayer();
+	if (m_gameState == INSIDEGAME)
+	{
+		m_window.clear(sf::Color::Blue);
+		renderPlayer();
+	}
+	else if (m_gameState == MAINMENU)
+	{
+		m_window.clear();
+		renderMainMenu();
+	}
 	m_window.display();
 }
